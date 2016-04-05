@@ -33,14 +33,11 @@ main([Filename]) ->
     Root = filename:rootname(Filename),
     {ok, IoDev} = file:open(Filename, [read]),
     {Lexer, Transforms} = read(IoDev, start, [], []),
-    io:format("Transforms is ~p~n", [Transforms]),
     ok = file:close(IoDev),
     Tokens = relex_terminals(Lexer, []),
     Transforms2 = [string:strip(X, right, $\n) || X <- Transforms],
-    io:format("Transforms2 is ~p~n", [Transforms2]),
     Lookup = relex_transforms(merge_lines(Transforms2, []), []),
-    io:format("Lookup is ~p~n", [Lookup]),
-    ok = compile(Tokens, Root, [], []),
+    ok = compile(Tokens, Lookup, Root, [], []),
     ok;
 main(_Other) ->
     io:format("Invalid invocation of this escript.~n~nUsage::~n" ++
@@ -88,10 +85,8 @@ relex_transforms([], Acc) ->
 relex_transforms([[$% | _Rest] | T], Acc) ->
     relex_transforms(T, Acc);    
 relex_transforms([L | T], Acc) ->
-    io:format("L is ~p~n", [L]),
     [Gen | Terminal] = string:tokens(L, ":"),
     Terminal2 =  lists:flatten(Terminal),
-    io:format("Gen is ~p Terminal is ~p~n", [Gen, Terminal2]),
     AST = string_to_AST(Terminal2),
     case AST of
         [{tuple, _, [_, {tuple, _, [{atom, _, Terminal3}, _]}]}] ->
@@ -121,19 +116,30 @@ relex_terminals([H | T], Acc) ->
                         relex_terminals(T, [{Gen2, RegEx2} | Acc])
     end.
 
-compile([], Root, Exports, Fns) ->
+compile([], _Lookup, Root, Exports, Fns) ->
     Base = filename:basename(Root) ++ "_compiler",
     _Mod = string:join([
-                       "%% Generated file",
-                       "-module(" ++ Base ++ ").",
-                       "-exports([" ++ string:join(lists:reverse(Exports), ",") ++ "])."
-                      ] ++ lists:reverse(Fns), "~n~n"),
+                        "%% Generated file",
+                        "-module(" ++ Base ++ ").",
+                        "-exports([" ++ string:join(lists:reverse(Exports), ",") ++ "])."
+                       ] ++ lists:reverse(Fns), "~n~n"),
     %%io:format(Mod),
     ok;
-compile([{Gen, RegEx} | T], File, Exports, Fns) ->
-    Export = make_export(Gen),
-    Fn = make_fn(Gen, RegEx),
-    compile(T, File, [Export| Exports], [Fn | Fns]).
+compile([{Gen, RegEx} | T], Lookup, File, Exports, Fns) ->
+    case lookup(Gen, Lookup) of
+        {ok, TransGen} ->
+            Export = make_export(TransGen),
+            Fn = make_fn(TransGen, RegEx),
+            compile(T, Lookup, File, [Export| Exports], [Fn | Fns]);
+        skip ->
+            compile(T, Lookup, File, Exports, Fns)
+    end.
+
+lookup(Gen, Lookup) ->
+    case lists:keyfind(Gen, 1, Lookup) of
+        {Gen, Trans} -> {ok, atom_to_list(Trans)};
+        false        -> skip
+    end.
 
 make_export(Gen) -> "'" ++ Gen ++ "'/0".
 
@@ -141,5 +147,15 @@ make_fn(Gen, RegEx) ->
     "'" ++ Gen ++ "'() ->~n" ++ make_gen(RegEx).
 
 make_gen(RegEx) ->
-    %% io:format("RegEx is ~p~n", [RegEx]),
-    "erk.".
+    io:format("RegEx is ~p~n", [RegEx]),
+    try
+        {ok, Toks, _} = regex_lexer:string(RegEx),
+        %io:format("Toks is ~p~n", [Toks]),
+        {ok, Body} = regex_parser:parse(Toks),
+        io:format("Body is ~p~n", [Body]),
+        Body
+    catch A:B ->
+            io:format("~p ~p ~p~n", [RegEx, A, B]),
+            %io:format("Sadly not~n"),
+            "erk."
+    end.

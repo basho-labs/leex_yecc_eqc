@@ -8,3 +8,7 @@ ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+*~
+riak_ql_lexer.xrl
+regex_lexer.erl
+regex_parser.erl
