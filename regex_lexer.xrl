@@ -36,6 +36,6 @@ Rules.
 {PLUS}       : {token, {plus,       TokenChars}}.
 {UNDERSCORE} : {token, {underscore, TokenChars}}.
 
-. : {token, {stuff, TokenChars}}.
+. : {token, {chars, TokenChars}}.
 
 Erlang code.

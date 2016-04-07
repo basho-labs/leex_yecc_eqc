@@ -118,12 +118,12 @@ relex_terminals([H | T], Acc) ->
 
 compile([], _Lookup, Root, Exports, Fns) ->
     Base = filename:basename(Root) ++ "_compiler",
-    _Mod = string:join([
+    Mod = string:join([
                         "%% Generated file",
                         "-module(" ++ Base ++ ").",
                         "-exports([" ++ string:join(lists:reverse(Exports), ",") ++ "])."
                        ] ++ lists:reverse(Fns), "~n~n"),
-    %%io:format(Mod),
+    io:format(Mod),
     ok;
 compile([{Gen, RegEx} | T], Lookup, File, Exports, Fns) ->
     case lookup(Gen, Lookup) of

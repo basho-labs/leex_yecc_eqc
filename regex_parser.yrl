@@ -6,6 +6,7 @@
 Nonterminals
 
 Generator
+Matchs
 Match
 Groups
 Group
@@ -19,7 +20,7 @@ open
 close
 %open_sq
 %close_sq
-%pipe
+pipe
 %caret
 %backslash
 %question
@@ -28,25 +29,34 @@ close
 %plus
 %underscore
 
-stuff
+chars
 
 .
 
 Rootsymbol Generator.
 Endsymbol '$end'.
 
-Generator -> Match  : finalise(make_gen('$1')).
+Generator -> Matchs : finalise(make_gen('$1')).
 Generator -> Groups : finalise(make_groups('$1')).
 
-Groups -> Group : ['$1'].
-Groups -> Groups Group : '$1' ++ ['$2'].
+Groups -> Group             : ['$1'].
+Groups -> Groups Group      : '$1' ++ ['$2'].
+Groups -> Groups pipe Group : make_or('$1', ['$3']).
 
-Group -> open Match close : log("make_gen", make_gen('$2')).
+Group -> open Matchs close : log("make_gen~n", make_gen('$2')).
 
-Match -> stuff : ['$1'].
-Match -> Match stuff : '$1' ++ ['$2'].
-    
+Matchs -> Matchs pipe Matchs : log("Matches (3)~n", make_or('$1', ['$3'])).
+
+Matchs -> Match             : log("Matches (1)~n", ['$1']).
+Matchs -> Matchs chars      : log("Matches (2)~n", '$1' ++ ['$2']).
+
+Match -> chars            : '$1'.
+
 Erlang code.
+
+make_or(A, B) ->
+    io:format("make an or around ~p ~p~n", [A, B]),
+    A ++ B.
 
 make_gen(Tokens) ->
     io:format("Tokens is ~p~n", [Tokens]),
