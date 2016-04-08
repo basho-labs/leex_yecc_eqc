@@ -147,7 +147,6 @@ make_fn(Gen, RegEx) ->
     "'" ++ Gen ++ "'() ->~n" ++ make_gen(RegEx).
 
 make_gen(RegEx) ->
-    io:format("RegEx is ~p~n", [RegEx]),
     try
         {ok, Toks, _} = regex_lexer:string(RegEx),
         %io:format("Toks is ~p~n", [Toks]),
@@ -155,7 +154,7 @@ make_gen(RegEx) ->
         io:format("Body is ~p~n", [Body]),
         Body
     catch A:B ->
-            io:format("~p ~p ~p~n", [RegEx, A, B]),
+            io:format("RegEx fail for ~p~n- ~p~n- ~p~n", [RegEx, A, B]),
             %io:format("Sadly not~n"),
             "erk."
     end.

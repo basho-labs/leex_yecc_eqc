@@ -19,6 +19,7 @@ DOT        = \.
 TILDA      = \~
 PLUS       = \+
 UNDERSCORE = \_
+STAR       = \*
 
 Rules.
 
@@ -35,6 +36,7 @@ Rules.
 {TILDA}      : {token, {tilda,      TokenChars}}.
 {PLUS}       : {token, {plus,       TokenChars}}.
 {UNDERSCORE} : {token, {underscore, TokenChars}}.
+{STAR}       : {token, {star,       TokenChars}}.
 
 . : {token, {chars, TokenChars}}.
 
